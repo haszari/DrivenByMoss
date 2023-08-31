@@ -58,6 +58,8 @@ public enum Modes
     SEND8,
     /** Edit Sends of all tracks. */
     SEND,
+    /** Edit track-level remote controls of all tracks. */
+    TRACK_REMOTE_CONTROLS,
 
     /** Edit master track. */
     MASTER,
