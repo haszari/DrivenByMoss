@@ -180,7 +180,7 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
         // new TrackVolumeMode<> (surface, this.model, true, ContinuousID.createSequentialList (ContinuousID.FADER1, 4)).onActivate ();
 
         for (int i = 0; i < NUM_CONTROLLER_CHANNELS; i++) {
-            this.addFader (ContinuousID.get (ContinuousID.FADER1, i), "Fader " + (i + 1), new KnobRowModeCommand<> (i, this.model, surface), BindType.CC, KontrolF1ControlSurface.KONTROLF1_FADER_1 + i, KontrolF1ControlSurface.KONTROLF1_MIDICHANNEL).setIndexInGroup(i);;
+            this.addFader (ContinuousID.get (ContinuousID.FADER1, i), "Fader " + (i + 1), new KnobRowModeCommand<> (i, this.model, surface), BindType.CC, KontrolF1ControlSurface.KONTROLF1_MIDICHANNEL, KontrolF1ControlSurface.KONTROLF1_FADER_1 + i).setIndexInGroup(i);;
         }
     }
 
