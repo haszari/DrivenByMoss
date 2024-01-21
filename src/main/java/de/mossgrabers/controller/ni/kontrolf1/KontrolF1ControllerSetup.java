@@ -4,30 +4,40 @@
 
 package de.mossgrabers.controller.ni.kontrolf1;
 
+import java.util.List;
+
 import de.mossgrabers.controller.ni.kontrolf1.controller.KontrolF1ColorManager;
 import de.mossgrabers.controller.ni.kontrolf1.controller.KontrolF1ControlSurface;
+import de.mossgrabers.framework.command.continuous.KnobRowModeCommand;
 import de.mossgrabers.framework.configuration.ISettingsUI;
 import de.mossgrabers.framework.controller.AbstractControllerSetup;
 import de.mossgrabers.framework.controller.ButtonID;
 import de.mossgrabers.framework.controller.ContinuousID;
 import de.mossgrabers.framework.controller.ISetupFactory;
 import de.mossgrabers.framework.controller.hardware.BindType;
-import de.mossgrabers.framework.controller.valuechanger.OffsetBinaryRelativeValueChanger;
+import de.mossgrabers.framework.controller.valuechanger.TwosComplementValueChanger;
 import de.mossgrabers.framework.daw.IHost;
 import de.mossgrabers.framework.daw.ModelSetup;
 import de.mossgrabers.framework.daw.data.bank.ITrackBank;
 import de.mossgrabers.framework.daw.midi.IMidiAccess;
 import de.mossgrabers.framework.daw.midi.IMidiInput;
 import de.mossgrabers.framework.daw.midi.IMidiOutput;
+import de.mossgrabers.framework.featuregroup.ModeManager;
+import de.mossgrabers.framework.mode.Modes;
+import de.mossgrabers.framework.mode.track.TrackVolumeMode;
 
 
 /**
- * Support for the Arturia Beatstep and Beatstep Pro controllers.
+ * Kontrol F1 extension (experiment/work in progress).
  *
  * @author Jürgen Moßgraber
  */
 public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1ControlSurface, KontrolF1Configuration>
 {
+    private static final int NUM_CONTROLLER_CHANNELS = 4;
+
+    private static final List<ContinuousID> FADER_IDS        = ContinuousID.createSequentialList (ContinuousID.FADER1, NUM_CONTROLLER_CHANNELS);
+
     /**
      * Constructor.
      *
@@ -41,7 +51,7 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
         super (factory, host, globalSettings, documentSettings);
 
         this.colorManager = new KontrolF1ColorManager ();
-        this.valueChanger = new OffsetBinaryRelativeValueChanger (128, 1);
+        this.valueChanger = new TwosComplementValueChanger (128, 1);
         this.configuration = new KontrolF1Configuration (host, this.valueChanger, factory.getArpeggiatorModes ());
     }
 
@@ -51,6 +61,7 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     protected void createModel ()
     {
         final ModelSetup ms = new ModelSetup ();
+        ms.setNumTracks(NUM_CONTROLLER_CHANNELS);
         this.model = this.factory.createModel (this.configuration, this.colorManager, this.valueChanger, this.scales, ms);
         final ITrackBank trackBank = this.model.getTrackBank ();
         trackBank.addSelectionObserver ( (index, value) -> this.handleTrackChange (value));
@@ -64,11 +75,20 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     {
         final IMidiAccess midiAccess = this.factory.createMidiAccess ();
         final IMidiOutput output = midiAccess.createOutput ();
-        // Might need to change these to CCs or more specific for the pads.
-        final IMidiInput input = midiAccess.createInput ("Pads", "80????" /* Note off */,
-                "90????" /* Note on */);
+        final IMidiInput input = midiAccess.createInput ("Native Instruments Kontrol F1");
 
         this.surfaces.add (new KontrolF1ControlSurface (this.host, this.colorManager, this.configuration, output, input));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected void createModes ()
+    {
+        final KontrolF1ControlSurface surface = this.getSurface ();
+        final ModeManager modeManager = surface.getModeManager ();
+        modeManager.register (Modes.VOLUME, new TrackVolumeMode<> (surface, this.model, true, FADER_IDS));
+        modeManager.setDefaultID (Modes.VOLUME);
+        // Note the initial active mode is set in startup().
     }
 
 
@@ -86,12 +106,12 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     @Override
     protected void createObservers ()
     {
-        super.createObservers ();
+        // super.createObservers ();
 
-        this.getSurface ().getViewManager ().addChangeListener ( (previousViewId, activeViewId) -> this.updateIndication ());
-        this.createScaleObservers (this.configuration);
+        // this.getSurface ().getViewManager ().addChangeListener ( (previousViewId, activeViewId) -> this.updateIndication ());
+        // this.createScaleObservers (this.configuration);
 
-        this.configuration.registerDeactivatedItemsHandler (this.model);
+        // this.configuration.registerDeactivatedItemsHandler (this.model);
     }
 
 
@@ -144,7 +164,7 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     {
         // TBC - this is where I set up my channel remote controls.
 
-        // final BeatstepControlSurface surface = this.getSurface ();
+        final KontrolF1ControlSurface surface = this.getSurface ();
         // final ViewManager viewManager = surface.getViewManager ();
         // for (int i = 0; i < 8; i++)
         // {
@@ -157,7 +177,11 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
         // final PlayView playView = (PlayView) viewManager.get (Views.PLAY);
         // playView.registerAftertouchCommand (new AftertouchViewCommand<> (playView, this.model, surface));
 
-        // this.addFader (ContinuousID.get (ContinuousID.FADER1, i), "Fader " + (i + 1), new KnobRowModeCommand<> (i, this.model, surface), BindType.CC, APCminiControlSurface.APC_KNOB_TRACK_LEVEL1 + i).setIndexInGroup (i);
+        // new TrackVolumeMode<> (surface, this.model, true, ContinuousID.createSequentialList (ContinuousID.FADER1, 4)).onActivate ();
+
+        for (int i = 0; i < NUM_CONTROLLER_CHANNELS; i++) {
+            this.addFader (ContinuousID.get (ContinuousID.FADER1, i), "Fader " + (i + 1), new KnobRowModeCommand<> (i, this.model, surface), BindType.CC, KontrolF1ControlSurface.KONTROLF1_FADER_1 + i, KontrolF1ControlSurface.KONTROLF1_MIDICHANNEL).setIndexInGroup(i);;
+        }
     }
 
 
@@ -165,48 +189,12 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     @Override
     protected void layoutControls ()
     {
-        // TBC - Assuming optional, virtual representation of controller. Can add this if useful.
-
         final KontrolF1ControlSurface surface = this.getSurface ();
 
-        // surface.getButton (ButtonID.PAD1).setBounds (145.25, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD2).setBounds (222.5, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD3).setBounds (302.75, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD4).setBounds (382.75, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD5).setBounds (463.0, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD6).setBounds (543.0, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD7).setBounds (623.25, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD8).setBounds (703.25, 232.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD9).setBounds (145.25, 151.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD10).setBounds (222.5, 151.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD11).setBounds (302.75, 151.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD12).setBounds (382.75, 151.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD13).setBounds (463.0, 151.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD14).setBounds (543.0, 151.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD15).setBounds (623.25, 151.75, 57.0, 55.5);
-        // surface.getButton (ButtonID.PAD16).setBounds (703.25, 151.75, 57.0, 55.5);
+        for (int i=0; i<NUM_CONTROLLER_CHANNELS; i++) {
+            surface.getContinuous (ContinuousID.get (ContinuousID.FADER1, i)).setBounds (4 + (i * 30), 30, 18, 60);
+        }
 
-        // surface.getButton (ButtonID.SHIFT).setBounds (45.5, 262.0, 30.25, 30.25);
-
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB1).setBounds (155.25, 92.25, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB2).setBounds (237.0, 92.25, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB3).setBounds (318.75, 92.25, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB4).setBounds (400.5, 92.25, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB5).setBounds (482.25, 92.25, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB6).setBounds (564.0, 92.25, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB7).setBounds (646.0, 92.25, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.DEVICE_KNOB8).setBounds (727.75, 92.25, 35.0, 32.5);
-
-        surface.getContinuous (ContinuousID.KNOB1).setBounds (10, 10, 20, 20);
-        // surface.getContinuous (ContinuousID.KNOB2).setBounds (237.0, 19.5, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.KNOB3).setBounds (318.75, 19.5, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.KNOB4).setBounds (400.5, 19.5, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.KNOB5).setBounds (482.25, 19.5, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.KNOB6).setBounds (564.0, 19.5, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.KNOB7).setBounds (646.0, 19.5, 35.0, 32.5);
-        // surface.getContinuous (ContinuousID.KNOB8).setBounds (727.75, 19.5, 35.0, 32.5);
-
-        // surface.getContinuous (ContinuousID.MASTER_KNOB).setBounds (39.75, 30.5, 75.5, 77.75);
     }
 
 
@@ -214,6 +202,8 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     @Override
     public void startup ()
     {
+        final KontrolF1ControlSurface surface = this.getSurface ();
+        surface.getModeManager ().setActive (Modes.VOLUME);
     }
 
 
