@@ -46,8 +46,7 @@ public class KontrolF1ControlSurface extends AbstractControlSurface<KontrolF1Con
      */
     public KontrolF1ControlSurface (final IHost host, final ColorManager colorManager, final KontrolF1Configuration configuration, final IMidiOutput output, final IMidiInput input)
     {
-        // super (host, configuration, colorManager, output, input, new BeatstepPadGrid (colorManager, output), 800, 314);
-        super (host, configuration, colorManager, output, input, null, 120, 294);
+        super (host, configuration, colorManager, output, input, new KontrolF1PadGrid (colorManager, output), 120, 294);
     }
 
 

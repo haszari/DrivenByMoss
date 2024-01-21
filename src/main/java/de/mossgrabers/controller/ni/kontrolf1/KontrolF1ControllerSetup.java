@@ -8,6 +8,7 @@ import java.util.List;
 
 import de.mossgrabers.controller.ni.kontrolf1.controller.KontrolF1ColorManager;
 import de.mossgrabers.controller.ni.kontrolf1.controller.KontrolF1ControlSurface;
+import de.mossgrabers.controller.ni.kontrolf1.view.SessionView;
 import de.mossgrabers.framework.command.continuous.KnobRowModeCommand;
 import de.mossgrabers.framework.configuration.ISettingsUI;
 import de.mossgrabers.framework.controller.AbstractControllerSetup;
@@ -23,8 +24,10 @@ import de.mossgrabers.framework.daw.midi.IMidiAccess;
 import de.mossgrabers.framework.daw.midi.IMidiInput;
 import de.mossgrabers.framework.daw.midi.IMidiOutput;
 import de.mossgrabers.framework.featuregroup.ModeManager;
+import de.mossgrabers.framework.featuregroup.ViewManager;
 import de.mossgrabers.framework.mode.Modes;
 import de.mossgrabers.framework.mode.track.TrackVolumeMode;
+import de.mossgrabers.framework.view.Views;
 
 
 /**
@@ -96,9 +99,9 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     @Override
     protected void createViews ()
     {
-        // final KontrolF1ControlSurface surface = this.getSurface ();
-        // final ViewManager viewManager = surface.getViewManager ();
-        // viewManager.register (Views.SESSION, new SessionView (surface, this.model));
+        final KontrolF1ControlSurface surface = this.getSurface ();
+        final ViewManager viewManager = surface.getViewManager ();
+        viewManager.register (Views.SESSION, new SessionView (surface, this.model));
     }
 
 
@@ -191,10 +194,32 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     {
         final KontrolF1ControlSurface surface = this.getSurface ();
 
-        for (int i=0; i<NUM_CONTROLLER_CHANNELS; i++) {
-            surface.getContinuous (ContinuousID.get (ContinuousID.FADER1, i)).setBounds (4 + (i * 30), 30, 18, 60);
+        for (int channel=0; channel<NUM_CONTROLLER_CHANNELS; channel++) {
+            surface.getContinuous (ContinuousID.get (ContinuousID.FADER1, channel)).setBounds (4 + (channel * 30), 30, 18, 60);
         }
 
+        // FYI the pads are numbered from bottom left, columns then rows.
+        final int left = 5;
+        final int padJump = 30;
+        surface.getButton (ButtonID.PAD1).setBounds (left + 0 * padJump, 100 + 3 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD2).setBounds (left + 1 * padJump, 100 + 3 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD3).setBounds (left + 2 * padJump, 100 + 3 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD4).setBounds (left + 3 * padJump, 100 + 3 * padJump, 20, 20);
+
+        surface.getButton (ButtonID.PAD5).setBounds (left + 0 * padJump, 100 + 2 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD6).setBounds (left + 1 * padJump, 100 + 2 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD7).setBounds (left + 2 * padJump, 100 + 2 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD8).setBounds (left + 3 * padJump, 100 + 2 * padJump, 20, 20);
+
+        surface.getButton (ButtonID.PAD9).setBounds  (left + 0 * padJump, 100 + 1 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD10).setBounds (left + 1 * padJump, 100 + 1 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD11).setBounds (left + 2 * padJump, 100 + 1 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD12).setBounds (left + 3 * padJump, 100 + 1 * padJump, 20, 20);
+
+        surface.getButton (ButtonID.PAD13).setBounds (left + 0 * padJump, 100 + 0 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD14).setBounds (left + 1 * padJump, 100 + 0 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD15).setBounds (left + 2 * padJump, 100 + 0 * padJump, 20, 20);
+        surface.getButton (ButtonID.PAD16).setBounds (left + 3 * padJump, 100 + 0 * padJump, 20, 20);
     }
 
 
@@ -203,6 +228,7 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     public void startup ()
     {
         final KontrolF1ControlSurface surface = this.getSurface ();
+        surface.getViewManager ().setActive (Views.SESSION);
         surface.getModeManager ().setActive (Modes.VOLUME);
     }
 
