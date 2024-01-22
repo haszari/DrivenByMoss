@@ -38,6 +38,7 @@ import de.mossgrabers.framework.view.Views;
 public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1ControlSurface, KontrolF1Configuration>
 {
     private static final int NUM_CONTROLLER_CHANNELS = 4;
+    private static final int NUM_CONTROLLER_SCENES = 4;
 
     private static final List<ContinuousID> FADER_IDS        = ContinuousID.createSequentialList (ContinuousID.FADER1, NUM_CONTROLLER_CHANNELS);
 
@@ -64,7 +65,13 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     protected void createModel ()
     {
         final ModelSetup ms = new ModelSetup ();
+
+        // Set the session view highlight grid to correct size (4x4).
         ms.setNumTracks(NUM_CONTROLLER_CHANNELS);
+        ms.setNumScenes(NUM_CONTROLLER_SCENES);
+        // This shows a highlight rect on the selected clip (I think).
+        // ms.setWantsClipLauncherNavigator(true);
+
         this.model = this.factory.createModel (this.configuration, this.colorManager, this.valueChanger, this.scales, ms);
         final ITrackBank trackBank = this.model.getTrackBank ();
         trackBank.addSelectionObserver ( (index, value) -> this.handleTrackChange (value));
@@ -78,7 +85,8 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     {
         final IMidiAccess midiAccess = this.factory.createMidiAccess ();
         final IMidiOutput output = midiAccess.createOutput ();
-        final IMidiInput input = midiAccess.createInput ("Native Instruments Kontrol F1");
+        final IMidiInput input = midiAccess.createInput ("Pads", "80????" /* Note off */,
+        "90????" /* Note on */);
 
         this.surfaces.add (new KontrolF1ControlSurface (this.host, this.colorManager, this.configuration, output, input));
     }
@@ -109,12 +117,7 @@ public class KontrolF1ControllerSetup extends AbstractControllerSetup<KontrolF1C
     @Override
     protected void createObservers ()
     {
-        // super.createObservers ();
-
-        // this.getSurface ().getViewManager ().addChangeListener ( (previousViewId, activeViewId) -> this.updateIndication ());
-        // this.createScaleObservers (this.configuration);
-
-        // this.configuration.registerDeactivatedItemsHandler (this.model);
+        super.createObservers ();
     }
 
 
